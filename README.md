@@ -142,3 +142,96 @@ SpringBoot를 활용하면 스타터 의존성과 Auto-Configuration을 통해 �
 
 Spring을 활용하여 **마이크로서비스**를 구축하도록 돕는다.
 
+
+
+## Chaper 2.
+
+### Lombok
+
+#### @Data
+
+`@Getter`, `@Setter `, `@EqualsAndHashCode`, `@RequiredArgsConstructor` 어노테이션을 매핑한 것과 같은 역할을 한다.
+
+#### @Slf4j
+
+`logger` 필드를 생성해준다. 
+
+```java
+@Slf4j
+public class LogExample{
+    
+}
+
+will generate:
+public class LogExample {
+	private static final org.sl4j.Logger log = org.slf4j.LoggerFactory.getLogger(LogExample.class);
+}
+```
+
+`SpringBoot` 에서는 `logback` 이 기본 로깅 프레임워크로, 의존하고 있는 `slf4j api`와 `bridge` 모듈을 함께 포함하고 있어 로그 처리 관련 모듈을 추가하지 않아도 된다.
+
+`logback`을 활용하면 로그를 파일로 남길 수 있지만 콘솔에서 로그만 확인하려면 `application properties`에 로그 레벨만 설정하는 것으로 로그 확인이 가능하다.
+
+출처: https://moztiq.medium.com/lombok-slf4j-in-spring-boot-5ba85ccd7a25
+
+
+
+`log.info()`를 사용해서 로그를 확인하자
+
+
+
+### Spring
+
+#### @RequestMapping
+
+`Spring Mvc`에서는 `@RequestMappingHandlerMapping`, `Spring WebFlux`에서는 `@RequestMappingHandlerAdapter`를 통해서 제공된다.
+
+`class` 레벨과 `mehotd` 레벨에 매핑될 수 있다. 다만, `method` 레벨에서는 `@GetMapping`, `@PostMapping`, `@PutMappint`, `@DeleteMapping`, `@PatchMapping`을 사용하는 것을 추천한다.
+
+`class` 레벨에 사용되면 `base path`를 매핑하는 용도로 사용되며 `method` 레벨에서는 `HTTP Header`, `URL Parameters`, `produces/consumes` 등 다양한 정보를 설정할 수 있다.
+
+#### org.springframework.ui.Model
+
+`View`에 동적으로 등록할 `attributes`들을 홀딩하는 인터페이스이다.
+
+`java.util.Map`을 포함한 모든 데이터 타입을 수용할 수 있다.
+
+#### org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+
+`WebMvcConfigurer`는 인터페이스임에도 불구하고 모든  메소드가 `default method`이다. 따라서 우리가 필요한 메소드만 오버라이딩하면 된다.
+
+
+
+아무런 로직 없이 그저 `Template`만 출력하는 경우에는 `addViewControllers(ViewController Registry)` 메소드를 오버라이딩해서 컨트롤러를 대체해보자.
+
+
+
+위와 같이 간단한 컨트롤러를 대체할 경우 `@Configuration` 어노테이션이 필요하다.
+
+#### Validation
+
+`Spring Mvc`에서 폼 데이터 검증을 할 때는 다음과 같은 절차를 따른다.
+
+`Validation API`는 `Hibernate component`에 구현되어 있고 `Hibernate component`는 `spring-boot-start`가 자동으로 의존성을 주입한다.
+
+
+
+* 도메인 클래스에 검사 규칙을 선언한다. (`@NotNull`, `@Size`, `@Digits`, `@Pattern`, `@CreditCardNumber`,`@NotBlank` 등등)
+* 유효성 검사를 수행하는 컨트롤러 메서드에 검사를 수행한다는 것을 지정한다. (`@Valid` 어노터에션을 컨트롤러 파라미터에 추가하기)
+* 검사 에러를 `View` 에 매핑할 수 있도록 한다.
+
+
+
+`thymeleaf`와 함께 사용하면 에러에 대한 처리가 상당히 편리해진다. 
+
+`view`에 작성해놓은 `th:errors` 로직과 `controller`에 작성해놓은 `errors.hasErrors()`의 콜라보
+
+
+
+##### `@Valid`
+
+어노테이션을 매핑한 메소드가 실행되기 전에 먼저 어노테이션이 매핑된 변수를 검증한다.
+
+미리 정해놓은 규칙과 맞지 않는 것이 하나라도 있다면 `Errors` 객체에 저장되어서 메소드에 전달된다. 
+
+`errors.hasErrors()` 메소드를 호출하여 검증 값을 확인하는 절차가 필요하다.
