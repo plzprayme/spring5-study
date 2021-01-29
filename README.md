@@ -542,13 +542,13 @@ IDE가 정적분석을 할 떄 해당 노란색 경고를 무시해달라고 요
 
 #### `@ManyToMany`
 
-@Data는 뭘 생성하지만 NoArgs가 생기면 없어진다. 그래서 Required추가함
+각기 다른 테이블에 존재하는 컬럼 사이에 M:N 관계를 매핑할 떄 사용한다.
 
 
 
 #### `@PrePersist`
 
-해당 객체가 생성되기 전에 지정한 메소드의 코드가 동작한다.
+새로운 entity 객체가 생성되기 전에 지정한 메소드의 코드가 동작한다.
 
 ```java
 @PrePersist
@@ -563,35 +563,84 @@ void createdAt() {
 
 #### `CrudRepository<T, ID>`
 
-Spring DSL
+`T`에는 entity 클래스를 넣고 `ID`에는 entity 클래스의 id의 자료형을 넣는다. 
 
-Spring Data Signature
+* `T save(T)` 
+* `Iterable saveAll(T)` 
+* `Optinal<T> findById(ID)`
+* `boolean existsById(ID)`
+* `Iterable<T> findAll()`
+* `Iterable<T> findAllById(Iterable<ID>)`
+* `long count()`
+* `void deleteById(ID)`
+* `void delete(T)`
+* `void deleteAll(Iterable<T>)`
+* `void deleteAll()`
 
-List<Order> findByDeliveryZip(String deliveryZip); =>
+#### `JpaRepository<T, ID>`
 
-SELECT * FROM Order WHERE deliveryZip = ?
+`CrudRepository`의 메소드를 포함하면서 
 
-Spring Data는 method signature를 분석하여 쿼리를 결정한다. find == read == get
+* `void flush()`
 
-개체수를 원한다면 count
+* `S saveAndFlush(T)`
 
-orders를 무시해도 된다. Crud<T>에 해당하는 녀석이 자동으로 지정된다.
+* `void deleteInBatch(Iterable<T>)`
 
-서술어는 By 다음에 나온다.
+*  `void deleteAllInBatch()`
 
-@Query()
+*  `T getOne(ID)`
 
-정렬은 OrderBy
-
-#### `JpaRepository`
+   와 같은 메소드가 추가되었다.
 
 
 
-### Java
+#### 메소드 시그니처로 쿼리짜기
 
-#### CommandLineRunner`
+Spring Data는 Repository에 정의한 메소드의 시그니처를 분석하여 수행되어야 할 쿼리를 결정한다.
+
+![](https://images.velog.io/images/prayme/post/f1dda6f8-5a20-4abd-b47c-cd3268c09235/image.png)
 
 
 
-### `Optional`
+이외에도 정렬, 대소관계비교, 포함 등 복잡하지 않은 동작을 메서드 시그니처로 대체할 수 있다.
+
+
+
+#### @Query()
+
+메서드 시그니처로 대체할 수 없는 경우 직접 `Query`를 작성한다.
+
+
+
+#### CommandLineRunner
+
+`Spring Boot`에서 지원하는 인터페이스로서 `Spring Application` 구동 시점에 특정 코드를 실행 시킬 때 사용한다. 
+
+`void run(String... args) throws Exception;` 를 오버라이딩하여 사용한다.
+
+```java
+@Bean
+public CommandLineRunner dataLoader(OrderRepository repo) {
+	return new CommandLineRunner() {
+		    @Override
+		    public void run() throws Exception {
+                repo.save(new Order());
+            }
+    };
+
+}
+
+// lambda식으로 대체
+@Bean
+public CommandLineRunner dataLoader(OrderRepository repo) {
+    return args -> {
+    	repo.save(new Order());
+    };
+}
+```
+
+
+
+## Chapter 4.
 
