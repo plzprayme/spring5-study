@@ -644,3 +644,122 @@ public CommandLineRunner dataLoader(OrderRepository repo) {
 
 ## Chapter 4.
 
+Spring Security에 대해서 공부합시다
+
+
+
+### Gradle 의존성 추가
+
+```gradle
+implementation 'org.springframework.boot:spring-boot-starter-security'
+'org.springframework.security:spring-security-test'
+```
+
+
+
+### WebSecurityConfigurerAdapter
+
+`WebSecurityConfigurer<WebSecurity>`를 구현하는 추상 클래스이다.
+
+`WebSecurityConfigurer` 인스턴스 생성을 편리하게 해준다. 
+
+`configure()`만 오버라이딩해도 강력한 보안 설정이 가능하다 .
+
+일단 `configure()`를 익혀두자
+
+* `void configure(WebSecurity web) throws Exception`: `WebSecurity`를 설정할 수 있다. 특정 요청을 무시하거나 할 수 있다.
+* `void configure(HttpSecurity http) throws Exception`: `HttpSecurity`를 설정할 수 있다. 접근권한, 로그인 등등 요청 경로 지정가능
+* `void configure(AuthenticationManagerBuilder) throws Exception`: 사용자 인증 정보를 구성한다. inmemory 기반 유저를 생성할 수 있다.
+
+
+
+### 스프링 세션 스토어
+
+* in-memory
+* JDBC
+* LDAP
+* CUSTOM
+
+`void configure(AuthenticationManagerBuilder) throws Exception`에서 설정할 수 있다.
+
+
+
+#### JDBC 기반 스토어
+
+```java
+...
+private final DataSource dataSource;
+
+@Override
+protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+    auth
+        .jdbcAuthentication()
+        .dataSource(dataSource);
+}
+```
+
+위와 같이 코드를 작성하면 `Spring Security`에서 자동으로 다음 쿼리를 실행한다.
+
+```java
+// users 테이블에서 유저가 존재하는지 검사
+public static final String DEF_USERS_BY_USERNAME_QUERY = 
+    "select username, password, enabled " +
+    "from users " +
+    "where username = ?";
+
+// authorities 테이블에서 해당 유저가 권한이 있는지 조회
+public static final String DEF_AUTHORITIES_BY_USERNAME_QUERY =
+    "select username, authority " +
+    "from authorities " +
+    "where username = ?";
+
+// 사용자의 그룹을 확인하고 그 그룹의 권한을 체크한다.
+public static final String DEF_AUTHORITIES_BY_USERNAME_QUERY =
+    "select g.id, g.group_name, ga.authority " +
+    "from authorities g, group_members gm, group_authorities ga " +
+    "where gm.username = ? " +
+    "and g.id = ga.group_id " +
+    "and g.id = gm.group_id";
+    
+```
+
+당연히 `users`, `authorities`, `group_members`, `group_authorities` 테이블이 필요하다.
+
+그리고 위의 쿼리는 오버라이딩할 수 있다.
+
+```java
+...
+    
+@Override
+protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+	auth
+		.jdbcAuthentication()
+        .dataSource(dataSource)
+        .usersByUsernameQuery("custom query")
+        .authoritiesByUsernameQuery("custom query")
+        .passwordEncoder(new BCryptPasswordEncoder());
+}
+```
+
+
+
+#### 사용자 인증 커스터마이징
+
+1. `UserDetails`를 `implements`하는 `User` 클래스를 정의한다.
+2. `UserRepository`에 `User findByUsername(String)`을 정의한다.
+3. `UserDetailService`를 `implements`하는 `UserRepositoryUserDetailsService`를 정의한다. 
+4. `void configure(AuthenticationManagerBuilder) throws Exception`에서 `auth.userDetailsService(userDetailsService).passwordEncoder(encoder())` 정의
+
+#### @AuthenticationPrincipal
+
+`Authentication` 객체를 얻은 후 `getPrincipal()`을 호출하여 반환하여 `Object`에서 우리가 정의한 `User` 타입으로 변환까지 해준다.
+
+```java
+// 과거 프로젝트의 코드
+UserDetails user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+// 이제는 @AuthenticationPrincipal로 대체하자!
+```
+
+
+

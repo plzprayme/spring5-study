@@ -8,12 +8,12 @@ import javax.validation.constraints.Size;
 import java.util.Date;
 import java.util.List;
 
- @Data
+@Data
 @Entity
 public class Taco {
 
     @Id
-    @GeneratedValue(strategy= GenerationType.AUTO)
+    @GeneratedValue
     private Long id;
     private Date createdAt;
 
